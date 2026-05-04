@@ -47,17 +47,22 @@ COPY . .
 # Install Laravel PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Copy .env file
+# Copy env file and set to mysql
 RUN cp .env.example .env
+
+# Force MySQL in .env
+RUN sed -i 's/DB_CONNECTION=sqlite/DB_CONNECTION=mysql/g' .env
+RUN sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/g' .env
+RUN sed -i 's/SESSION_DRIVER=database/SESSION_DRIVER=file/g' .env
+RUN sed -i 's/CACHE_STORE=database/CACHE_DRIVER=file/g' .env
 
 # Generate app key
 RUN php artisan key:generate
 
-# Cache config and routes
+# Cache config only (no route cache to avoid conflicts)
 RUN php artisan config:cache
-RUN php artisan route:cache
 
-# Set correct permissions for storage and cache
+# Set correct permissions
 RUN chown -R www-data:www-data /var/www/html/storage
 RUN chown -R www-data:www-data /var/www/html/bootstrap/cache
 RUN chmod -R 775 /var/www/html/storage
