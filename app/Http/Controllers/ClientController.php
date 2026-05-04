@@ -9,16 +9,16 @@ use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller {
 
-    public function __construct() {
-        $this->middleware(function ($request, $next) {
-            if (!Auth::check() || Auth::user()->role !== 'client') {
-                return redirect()->route('login');
-            }
-            return $next($request);
-        });
+    private function checkClient() {
+        if (!Auth::check() || Auth::user()->role !== 'client') {
+            return redirect()->route('login');
+        }
+        return null;
     }
 
     public function dashboard() {
+        if ($redirect = $this->checkClient()) return $redirect;
+
         $openSlots  = Schedule::where('status', 'available')->count();
         $myBookings = Booking::where('user_id', Auth::id())
             ->where('status', 'booked')
@@ -27,6 +27,8 @@ class ClientController extends Controller {
     }
 
     public function viewSchedule() {
+        if ($redirect = $this->checkClient()) return $redirect;
+
         $schedules = Schedule::where('status', 'available')
             ->with('trainer.user')
             ->get();
@@ -34,6 +36,8 @@ class ClientController extends Controller {
     }
 
     public function bookSession($id) {
+        if ($redirect = $this->checkClient()) return $redirect;
+
         $schedule = Schedule::findOrFail($id);
 
         if ($schedule->status !== 'available') {
@@ -61,6 +65,8 @@ class ClientController extends Controller {
     }
 
     public function myBookings() {
+        if ($redirect = $this->checkClient()) return $redirect;
+
         $bookings = Booking::where('user_id', Auth::id())
             ->with('schedule.trainer.user')
             ->get();
@@ -68,6 +74,8 @@ class ClientController extends Controller {
     }
 
     public function cancelSession($id) {
+        if ($redirect = $this->checkClient()) return $redirect;
+
         $booking  = Booking::where('id', $id)
             ->where('user_id', Auth::id())
             ->firstOrFail();
