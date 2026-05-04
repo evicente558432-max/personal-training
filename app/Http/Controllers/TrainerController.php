@@ -9,25 +9,38 @@ use Illuminate\Support\Facades\Auth;
 
 class TrainerController extends Controller {
 
-    // Dashboard
+    public function __construct() {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::check() || Auth::user()->role !== 'trainer') {
+                return redirect()->route('login');
+            }
+            return $next($request);
+        });
+    }
+
     public function dashboard() {
         $trainer   = Auth::user()->trainer;
-        $schedules = $trainer ? $trainer->schedules()->with('booking.user')->get() : collect();
+        $schedules = $trainer
+            ? $trainer->schedules()->with('booking.user')->get()
+            : collect();
+
         $total     = $schedules->count();
         $available = $schedules->where('status', 'available')->count();
         $booked    = $schedules->where('status', 'booked')->count();
 
-        return view('trainer.dashboard', compact('schedules', 'total', 'available', 'booked'));
+        return view('trainer.dashboard', compact(
+            'schedules', 'total', 'available', 'booked'
+        ));
     }
 
-    // Show set schedule page
     public function scheduleForm() {
         $trainer   = Auth::user()->trainer;
-        $schedules = $trainer ? $trainer->schedules()->with('booking.user')->get() : collect();
+        $schedules = $trainer
+            ? $trainer->schedules()->with('booking.user')->get()
+            : collect();
         return view('trainer.schedule', compact('schedules'));
     }
 
-    // Save a new schedule
     public function saveSchedule(Request $request) {
         $request->validate([
             'date'       => 'required|date|after_or_equal:today',
@@ -39,7 +52,6 @@ class TrainerController extends Controller {
         $user    = Auth::user();
         $trainer = $user->trainer;
 
-        // Auto-create trainer record if not exists
         if (!$trainer) {
             $trainer = Trainer::create(['user_id' => $user->id]);
         }
@@ -55,10 +67,11 @@ class TrainerController extends Controller {
         return back()->with('success', 'Schedule saved!');
     }
 
-    // Delete own schedule
     public function deleteSchedule($id) {
         $trainer  = Auth::user()->trainer;
-        $schedule = Schedule::where('id', $id)->where('trainer_id', $trainer->id)->firstOrFail();
+        $schedule = Schedule::where('id', $id)
+            ->where('trainer_id', $trainer->id)
+            ->firstOrFail();
         $schedule->delete();
         return back()->with('success', 'Schedule deleted.');
     }

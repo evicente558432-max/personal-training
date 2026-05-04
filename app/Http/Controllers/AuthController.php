@@ -11,6 +11,9 @@ class AuthController extends Controller {
 
     // Show login page
     public function showLogin() {
+        if (Auth::check()) {
+            return $this->redirectByRole(Auth::user()->role);
+        }
         return view('auth.login');
     }
 
@@ -21,15 +24,31 @@ class AuthController extends Controller {
             'password' => 'required',
         ]);
 
-        if (Auth::attempt($request->only('email', 'password'))) {
-            $role = Auth::user()->role;
+        $credentials = $request->only('email', 'password');
 
-            if ($role === 'admin')   return redirect()->route('admin.dashboard');
-            if ($role === 'trainer') return redirect()->route('trainer.dashboard');
-            if ($role === 'client')  return redirect()->route('client.dashboard');
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
+            $role = Auth::user()->role;
+            return $this->redirectByRole($role);
         }
 
-        return back()->with('error', 'Invalid email or password.');
+        return back()->withErrors([
+            'email' => 'Invalid email or password.',
+        ])->withInput();
+    }
+
+    // Redirect based on role
+    private function redirectByRole($role) {
+        switch ($role) {
+            case 'admin':
+                return redirect()->route('admin.dashboard');
+            case 'trainer':
+                return redirect()->route('trainer.dashboard');
+            case 'client':
+                return redirect()->route('client.dashboard');
+            default:
+                return redirect('/');
+        }
     }
 
     // Show register page
@@ -54,14 +73,16 @@ class AuthController extends Controller {
         ]);
 
         Auth::login($user);
+        $request->session()->regenerate();
 
-        if ($user->role === 'trainer') return redirect()->route('trainer.dashboard');
-        return redirect()->route('client.dashboard');
+        return $this->redirectByRole($user->role);
     }
 
     // Logout
-    public function logout() {
+    public function logout(Request $request) {
         Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
         return redirect()->route('login');
     }
 }

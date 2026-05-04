@@ -9,14 +9,23 @@ use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller {
 
-    // Dashboard
+    public function __construct() {
+        $this->middleware(function ($request, $next) {
+            if (!Auth::check() || Auth::user()->role !== 'client') {
+                return redirect()->route('login');
+            }
+            return $next($request);
+        });
+    }
+
     public function dashboard() {
         $openSlots  = Schedule::where('status', 'available')->count();
-        $myBookings = Booking::where('user_id', Auth::id())->count();
+        $myBookings = Booking::where('user_id', Auth::id())
+            ->where('status', 'booked')
+            ->count();
         return view('client.dashboard', compact('openSlots', 'myBookings'));
     }
 
-    // View available sessions
     public function viewSchedule() {
         $schedules = Schedule::where('status', 'available')
             ->with('trainer.user')
@@ -24,7 +33,6 @@ class ClientController extends Controller {
         return view('client.view_schedule', compact('schedules'));
     }
 
-    // Book a session
     public function bookSession($id) {
         $schedule = Schedule::findOrFail($id);
 
@@ -32,9 +40,9 @@ class ClientController extends Controller {
             return back()->with('error', 'Session is no longer available.');
         }
 
-        // Prevent double booking
         $exists = Booking::where('user_id', Auth::id())
             ->whereHas('schedule', fn($q) => $q->where('date', $schedule->date))
+            ->where('status', 'booked')
             ->exists();
 
         if ($exists) {
@@ -52,7 +60,6 @@ class ClientController extends Controller {
         return back()->with('success', 'Session booked successfully!');
     }
 
-    // View my bookings
     public function myBookings() {
         $bookings = Booking::where('user_id', Auth::id())
             ->with('schedule.trainer.user')
@@ -60,9 +67,10 @@ class ClientController extends Controller {
         return view('client.my_bookings', compact('bookings'));
     }
 
-    // Cancel a booking
     public function cancelSession($id) {
-        $booking  = Booking::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+        $booking  = Booking::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
         $schedule = $booking->schedule;
 
         $booking->update(['status' => 'cancelled']);
