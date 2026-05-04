@@ -26,13 +26,13 @@ RUN apt-get update && apt-get install -y \
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# Change Apache port from 80 to 10000
+# Change Apache port to 10000
 RUN sed -i 's/Listen 80/Listen 10000/g' /etc/apache2/ports.conf && sed -i 's/<VirtualHost \*:80>/<VirtualHost *:10000>/g' /etc/apache2/sites-available/000-default.conf
 
-# Set Laravel public folder as document root
+# Set Laravel public as document root
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
-# Allow .htaccess overrides
+# Allow .htaccess
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 # Install Composer
@@ -41,32 +41,33 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy all project files
+# Copy project files
 COPY . .
 
-# Install Laravel PHP dependencies
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Copy env file and set to mysql
+# Copy env
 RUN cp .env.example .env
-
-# Force MySQL in .env
 RUN sed -i 's/DB_CONNECTION=sqlite/DB_CONNECTION=mysql/g' .env
-RUN sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/g' .env
 RUN sed -i 's/SESSION_DRIVER=database/SESSION_DRIVER=file/g' .env
 RUN sed -i 's/CACHE_STORE=database/CACHE_DRIVER=file/g' .env
 
-# Generate app key
+# Generate key
 RUN php artisan key:generate
 
-# Cache config only (no route cache to avoid conflicts)
+# Cache config
 RUN php artisan config:cache
 
-# Set correct permissions
+# Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage
 RUN chown -R www-data:www-data /var/www/html/bootstrap/cache
 RUN chmod -R 775 /var/www/html/storage
 RUN chmod -R 775 /var/www/html/bootstrap/cache
 
-# Expose port 10000
+# Startup script to migrate and start apache
+RUN echo '#!/bin/bash\nphp artisan migrate --force\napache2-foreground' > /start.sh
+RUN chmod +x /start.sh
+
 EXPOSE 10000
+CMD ["/bin/bash", "/start.sh"]
