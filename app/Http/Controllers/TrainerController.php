@@ -9,16 +9,11 @@ use Illuminate\Support\Facades\Auth;
 
 class TrainerController extends Controller {
 
-    public function __construct() {
-        $this->middleware(function ($request, $next) {
-            if (!Auth::check() || Auth::user()->role !== 'trainer') {
-                return redirect()->route('login');
-            }
-            return $next($request);
-        });
-    }
-
     public function dashboard() {
+        if (!Auth::check() || Auth::user()->role !== 'trainer') {
+            return redirect()->route('login');
+        }
+
         $trainer   = Auth::user()->trainer;
         $schedules = $trainer
             ? $trainer->schedules()->with('booking.user')->get()
@@ -34,6 +29,10 @@ class TrainerController extends Controller {
     }
 
     public function scheduleForm() {
+        if (!Auth::check() || Auth::user()->role !== 'trainer') {
+            return redirect()->route('login');
+        }
+
         $trainer   = Auth::user()->trainer;
         $schedules = $trainer
             ? $trainer->schedules()->with('booking.user')->get()
@@ -42,6 +41,10 @@ class TrainerController extends Controller {
     }
 
     public function saveSchedule(Request $request) {
+        if (!Auth::check() || Auth::user()->role !== 'trainer') {
+            return redirect()->route('login');
+        }
+
         $request->validate([
             'date'       => 'required|date|after_or_equal:today',
             'start_time' => 'required',
@@ -68,6 +71,10 @@ class TrainerController extends Controller {
     }
 
     public function deleteSchedule($id) {
+        if (!Auth::check() || Auth::user()->role !== 'trainer') {
+            return redirect()->route('login');
+        }
+
         $trainer  = Auth::user()->trainer;
         $schedule = Schedule::where('id', $id)
             ->where('trainer_id', $trainer->id)
