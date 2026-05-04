@@ -1,15 +1,17 @@
-@extends('layouts.app')
-@section('content')
-<h1 style="margin-bottom:20px">Trainer Dashboard</h1>
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Dashboard') }}
+        </h2>
+    </x-slot>
 
-<div class="stat-row">
-    <div class="stat-box"><div class="num">{{ $total }}</div><div class="lbl">My Sessions</div></div>
-    <div class="stat-box"><div class="num">{{ $available }}</div><div class="lbl">Available</div></div>
-    <div class="stat-box"><div class="num">{{ $booked }}</div><div class="lbl">Booked</div></div>
-</div>
-
-<div class="card">
-    <h2>Welcome, {{ auth()->user()->name }}!</h2>
-    <p style="color:#666">Use <strong>Set Schedule</strong> in the menu to add your availability.</p>
-</div>
-@endsection
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
+                    {{ __("You're logged in!") }}
+                </div>
+            </div>
+        </div>
+    </div>
+</x-app-layout>
