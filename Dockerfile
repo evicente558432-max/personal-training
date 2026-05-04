@@ -54,10 +54,11 @@ RUN sed -i 's/SESSION_DRIVER=database/SESSION_DRIVER=file/g' .env
 RUN sed -i 's/CACHE_STORE=database/CACHE_DRIVER=file/g' .env
 
 # Set DB credentials
-RUN sed -i 's/DB_HOST=127.0.0.1/DB_HOST=byjoduqjgfhd0lrwcdol-mysql.services.clever-cloud.com/g' .env
-RUN sed -i 's/DB_DATABASE=laravel/DB_DATABASE=byjoduqjgfhd0lrwcdol/g' .env
-RUN sed -i 's/DB_USERNAME=root/DB_USERNAME=uzyamed5cgx3bjvw/g' .env
-RUN sed -i 's/DB_PASSWORD=/DB_PASSWORD=J8kAfGJWcpALiRQjjCzO/g' .env
+RUN sed -i '/^DB_HOST/d' .env && echo "DB_HOST=byjoduqjgfhd0lrwcdol-mysql.services.clever-cloud.com" >> .env
+RUN sed -i '/^DB_PORT/d' .env && echo "DB_PORT=3306" >> .env
+RUN sed -i '/^DB_DATABASE/d' .env && echo "DB_DATABASE=byjoduqjgfhd0lrwcdol" >> .env
+RUN sed -i '/^DB_USERNAME/d' .env && echo "DB_USERNAME=uzyamed5cgx3bjvw" >> .env
+RUN sed -i '/^DB_PASSWORD/d' .env && echo "DB_PASSWORD=J8kAfGJWcpALiRQjjCzO" >> .env
 
 # Generate key
 RUN php artisan key:generate
